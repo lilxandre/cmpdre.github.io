@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Missões - LIL Xandre | Futurista</title>
+  <!-- Fontes: Orbitron para títulos e Roboto para o corpo -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Biblioteca Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* RESET */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* VARIÁVEIS DE TEMA */
+    :root {
+      --bg-dark: #0e0e0e;
+      --gradient-bg: linear-gradient(135deg, #0d0d0d, #1f1f1f, #0d0d0d);
+      --primary: #00C6FF; /* Neon azul */
+      --accent: #FF00FF;  /* Neon magenta */
+      --success: #00FF80; /* Neon verde */
+      --danger: #FF3366;
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --border-radius: 12px;
+      --transition: 0.4s ease;
+      --bg-size: 400% 400%;
+    }
+    
+    /* ANIMAÇÃO DE FUNDO */
+    @keyframes moveGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    /* BODY */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--gradient-bg);
+      background-size: var(--bg-size);
+      animation: moveGradient 20s ease infinite;
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    /* CONTAINER COM EFEITO GLASS */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      transition: var(--transition);
+    }
+    .container:hover {
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+    
+    /* CABEÇALHO */
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.6rem;
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary);
+      margin-bottom: 10px;
+    }
+    header p {
+      font-size: 1rem;
+      color: #bbb;
+    }
+    
+    /* PAINEL DE FILTROS */
+    .filter-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      padding: 15px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    .filter-panel div {
+      display: flex;
+      flex-direction: column;
+      min-width: 160px;
+    }
+    .filter-panel label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      font-size: 0.95rem;
+      color: var(--primary);
+      text-shadow: 0 0 3px var(--primary);
+    }
+    .filter-panel input,
+    .filter-panel select {
+      padding: 8px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      background: rgba(255,255,255,0.15);
+      color: #000;
+      transition: var(--transition);
+    }
+    .filter-panel input:focus,
+    .filter-panel select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    /* RESULTADOS */
+    .results {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    .results h2 {
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      text-shadow: 0 0 3px var(--primary);
+    }
+    .results ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .results li {
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: var(--border-radius);
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .results li:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .used {
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .available {
+      color: var(--success);
+      font-weight: 600;
+    }
+    .no-result {
+      color: #ffcccc;
+      font-style: italic;
+    }
+    
+    /* SEÇÃO DO GRÁFICO FINANCEIRO (com pseudo-reflexo do mouse) */
+    #financeChartContainer {
+      max-width: 600px;
+      margin: 30px auto;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      transition: var(--transition);
+      position: relative;
+      /* Variáveis para o efeito do mouse */
+      --mouseX: 50%;
+      --mouseY: 50%;
+      --highlight-opacity: 0;
+    }
+    #financeChartContainer::before {
+      content: "";
+      position: absolute;
+      top: var(--mouseY);
+      left: var(--mouseX);
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      opacity: var(--highlight-opacity, 0);
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    
+    /* TABELA COMPLETA */
+    .section-title {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      color: var(--primary);
+      text-shadow: 0 0 3px var(--primary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    table thead {
+      background: rgba(255,255,255,0.2);
+    }
+    table thead th {
+      padding: 10px;
+      font-size: 0.9rem;
+      color: #fff;
+      text-shadow: 0 0 2px #000;
+      text-transform: uppercase;
+    }
+    table tbody td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.95rem;
+      vertical-align: middle;
+    }
+    table tbody tr:hover td {
+      background: rgba(255,255,255,0.2);
+    }
+    .occupied {
+      background: rgba(255, 100, 100, 0.25) !important;
+      color: var(--danger);
+      font-weight: 600;
+    }
+    
+    /* Botão de Confirmação (ao lado do número) */
+    td span {
+      cursor: pointer;
+    }
+    .confirm-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 1rem;
+      margin-left: 5px;
+      vertical-align: middle;
+      transition: var(--transition);
+    }
+    .confirm-btn:hover {
+      color: var(--danger);
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Missões - LIL Xandre</h1>
+      <p>Gerencie suas missões com um design futurista e sofisticado.</p>
+    </header>
+    
+    <!-- Painel de Filtros -->
+    <section class="filter-panel">
+      <div>
+        <label for="numeroBusca">Nº da Missão:</label>
+        <input type="text" id="numeroBusca" placeholder="Ex: 005" oninput="consultar()">
+      </div>
+      <div>
+        <label for="dataBusca">Data Início:</label>
+        <input type="date" id="dataBusca" oninput="consultar()">
+      </div>
+      <div>
+        <label for="secaoBusca">Seção:</label>
+        <select id="secaoBusca" onchange="consultar()">
+          <option value="">-- Selecione --</option>
+        </select>
+      </div>
+      <div>
+        <label for="localBusca">Local:</label>
+        <select id="localBusca" onchange="consultar()">
+          <option value="">-- Selecione --</option>
+        </select>
+      </div>
+      <div>
+        <label for="somaBusca">SOMA:</label>
+        <input type="text" id="somaBusca" placeholder="Ex: R$ 2.007,50" oninput="consultar()">
+      </div>
+    </section>
+    
+    <!-- Área de Resultados -->
+    <section class="results" id="results"></section>
+    
+    <!-- Seção do Gráfico Financeiro com efeito de reflexo do mouse -->
+    <section id="financeChartContainer">
+      <canvas id="financeChart"></canvas>
+    </section>
+    
+    <!-- Tabela Completa das Missões -->
+    <h2 class="section-title">Tabela Completa das Missões</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nº</th>
+          <th>POSTO/GRAD</th>
+          <th>NOME</th>
+          <th>CPF</th>
+          <th>DATA INÍCIO</th>
+          <th>DATA FIM</th>
+          <th>SEÇÃO</th>
+          <th>LOCAL</th>
+          <th>GASTO (DIÁRIAS)</th>
+          <th>SOMA</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-linhas">
+        <!-- Será preenchido via JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Importa o arquivo dados.js com o array MISSOES -->
+  <script src="dados.js"></script>
+  
+  <script>
+    /* ===================== GRÁFICO FINANCEIRO ===================== */
+    // Converte valor "R$ 95,00" para número (float)
+    function parseValor(valor) {
+      if (!valor) return 0;
+      return parseFloat(valor.replace("R$", "").replace(/\./g, "").replace(",", "."));
+    }
+
+    // Agrega os valores de "GASTO (DIÁRIAS)" e "SOMA" por seção e calcula o restante
+    function agregarValoresPorSecao() {
+      const dadosSecao = {};
+      MISSOES.forEach(item => {
+        const secao = item["DIVISÃO/\nASSESS"] ? item["DIVISÃO/\nASSESS"].trim() : "SEM SEÇÃO";
+        const gasto = parseValor(item["GASTO (DIÁRIAS)"]);
+        const soma  = parseValor(item["SOMA"]);
+        if (!dadosSecao[secao]) {
+          dadosSecao[secao] = { gasto: 0, soma: 0 };
+        }
+        dadosSecao[secao].gasto += gasto;
+        dadosSecao[secao].soma  += soma;
+      });
+      return dadosSecao;
+    }
+
+    let financeChart = null;
+    function atualizarGraficoFinanceiro() {
+      const ctx = document.getElementById("financeChart").getContext("2d");
+      const dadosSecao = agregarValoresPorSecao();
+      const secoes = Object.keys(dadosSecao);
+      const gastoData = secoes.map(sec => dadosSecao[sec].gasto);
+      // Calcula o restante como SOMA - GASTO
+      const restanteData = secoes.map(sec => dadosSecao[sec].soma - dadosSecao[sec].gasto);
+
+      if (financeChart) {
+        financeChart.destroy();
+      }
+
+      financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: secoes,
+          datasets: [
+            {
+              label: 'Gasto',
+              data: gastoData,
+              backgroundColor: 'rgba(255,99,132,0.8)'
+            },
+            {
+              label: 'Restante',
+              data: restanteData,
+              backgroundColor: 'rgba(75,192,192,0.8)'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              ticks: {
+                color: '#fff',
+                font: {
+                  family: 'Orbitron',
+                  size: 12
+                }
+              },
+              grid: {
+                color: 'rgba(255,255,255,0.1)'
+              }
+            },
+            y: {
+              ticks: {
+                color: '#fff',
+                font: {
+                  family: 'Orbitron',
+                  size: 12
+                }
+              },
+              grid: {
+                color: 'rgba(255,255,255,0.1)'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#fff',
+                font: {
+                  family: 'Orbitron',
+                  size: 12
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Situação Financeira por Seção',
+              color: '#fff',
+              font: {
+                family: 'Orbitron',
+                size: 14
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* ===================== EFEITO DO MOUSE NO GRÁFICO (Vitrine) ===================== */
+    function atualizarReflexoGrafico(e) {
+      const container = document.getElementById('financeChartContainer');
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xRel = (x / rect.width) * 100;
+      const yRel = (y / rect.height) * 100;
+      container.style.setProperty('--mouseX', xRel + '%');
+      container.style.setProperty('--mouseY', yRel + '%');
+      container.style.setProperty('--highlight-opacity', 1);
+    }
+    function resetReflexoGrafico(e) {
+      const container = document.getElementById('financeChartContainer');
+      container.style.setProperty('--highlight-opacity', 0);
+    }
+    document.getElementById('financeChartContainer').addEventListener("mousemove", atualizarReflexoGrafico);
+    document.getElementById('financeChartContainer').addEventListener("mouseleave", resetReflexoGrafico);
+
+    /* ===================== RESTO DO CÓDIGO (FILTROS E TABELA) ===================== */
+    function inicializarUsadas() {
+      MISSOES.forEach(item => {
+        if (item.usada === undefined) item.usada = false;
+      });
+    }
+
+    function populateDropdowns() {
+      const secaoSelect = document.getElementById('secaoBusca');
+      const localSelect = document.getElementById('localBusca');
+      const secoes = new Set();
+      const locais = new Set();
+      
+      MISSOES.forEach(item => {
+        if (item["DIVISÃO/\nASSESS"]) {
+          secoes.add(item["DIVISÃO/\nASSESS"].trim());
+        }
+        if (item["LOCAL\n(CIDADE/UF)"]) {
+          locais.add(item["LOCAL\n(CIDADE/UF)"].trim());
+        }
+      });
+      
+      secoes.forEach(sec => {
+        const opt = document.createElement('option');
+        opt.value = sec;
+        opt.textContent = sec;
+        secaoSelect.appendChild(opt);
+      });
+      
+      locais.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc;
+        opt.textContent = loc;
+        localSelect.appendChild(opt);
+      });
+    }
+
+    function exibirTabelaCompleta() {
+      const corpo = document.getElementById('tabela-linhas');
+      let html = '';
+      MISSOES.forEach((linha, index) => {
+        const isUsed = !!linha.usada;
+        html += `<tr id="linha-${index}" class="${isUsed ? 'occupied' : ''}">
+          <td>
+            <span onclick="filtrarPorMissao('${linha["N.º"]}')" style="cursor:pointer;">${linha["N.º"] || ''}</span>
+            <button class="confirm-btn" onclick="event.stopPropagation(); confirmarUso('${linha["N.º"]}');">✔</button>
+          </td>
+          <td>${linha["POSTO/\nASSEGRAD"] || linha["POSTO/GRAD"] || 'N/A'}</td>
+          <td>${linha["NOME DO MILITAR OU CIVIL DESIGNADO"] || ''}</td>
+          <td>${linha["CPF"] || ''}</td>
+          <td>${linha["DATA INÍCIO"] || ''}</td>
+          <td>${linha["DATA FIM"] || ''}</td>
+          <td>${linha["DIVISÃO/\nASSESS"] || ''}</td>
+          <td>${linha["LOCAL\n(CIDADE/UF)"] || ''}</td>
+          <td>${linha["GASTO (DIÁRIAS)"] || ''}</td>
+          <td>${linha["SOMA"] || ''}</td>
+        </tr>`;
+      });
+      corpo.innerHTML = html;
+    }
+
+    function filtrarExato(item, numeroBusca, dataBusca, secaoBusca, localBusca, somaBusca) {
+      if (numeroBusca && item["N.º"] !== numeroBusca) return false;
+      if (dataBusca && converterData(item["DATA INÍCIO"]) !== dataBusca) return false;
+      if (secaoBusca) {
+        const sec = item["DIVISÃO/\nASSESS"] ? item["DIVISÃO/\nASSESS"].toUpperCase() : "";
+        if (!sec.includes(secaoBusca)) return false;
+      }
+      if (localBusca) {
+        const loc = item["LOCAL\n(CIDADE/UF)"] ? item["LOCAL\n(CIDADE/UF)"].toUpperCase() : "";
+        if (!loc.includes(localBusca)) return false;
+      }
+      if (somaBusca && item["SOMA"] !== somaBusca) return false;
+      return true;
+    }
+
+    function filtrarAproximado(item, dataBusca, secaoBusca, localBusca, somaBusca) {
+      const dtItemStr = converterData(item["DATA INÍCIO"]);
+      if (!dtItemStr) return false;
+      const dtBusca = new Date(dataBusca);
+      const dtItem = new Date(dtItemStr);
+      const diff = Math.abs((dtItem - dtBusca) / (1000 * 60 * 60 * 24));
+      if (diff > 7) return false;
+      if (secaoBusca) {
+        const sec = item["DIVISÃO/\nASSESS"] ? item["DIVISÃO/\nASSESS"].toUpperCase() : "";
+        if (!sec.includes(secaoBusca)) return false;
+      }
+      if (localBusca) {
+        const loc = item["LOCAL\n(CIDADE/UF)"] ? item["LOCAL\n(CIDADE/UF)"].toUpperCase() : "";
+        if (!loc.includes(localBusca)) return false;
+      }
+      if (somaBusca && item["SOMA"] !== somaBusca) return false;
+      return true;
+    }
+
+    function exibirResultados(exatos, aprox) {
+      const divRes = document.getElementById('results');
+      let html = '';
+      if (exatos.length === 0 && aprox.length === 0) {
+        html = "<p class='no-result'>Nenhum resultado encontrado para esses filtros.</p>";
+      } else {
+        if (exatos.length > 0) {
+          html += "<h2>Resultados Exatos</h2><ul>";
+          exatos.forEach(item => {
+            const classe = item.usada ? 'used' : 'available';
+            html += `<li class="${classe}" onclick="filtrarPorMissao('${item["N.º"]}')">
+              Nº ${item["N.º"]} | ${item["NOME DO MILITAR OU CIVIL DESIGNADO"] || ''} | Seção: ${item["DIVISÃO/\nASSESS"] || ''} | Data: ${item["DATA INÍCIO"]} a ${item["DATA FIM"]}
+            </li>`;
+          });
+          html += "</ul>";
+        }
+        if (aprox.length > 0) {
+          html += "<h2>Sugestões Próximas</h2><ul>";
+          aprox.forEach(item => {
+            const classe = item.usada ? 'used' : 'available';
+            html += `<li class="${classe}" onclick="filtrarPorMissao('${item["N.º"]}')">
+              Nº ${item["N.º"]} | ${item["NOME DO MILITAR OU CIVIL DESIGNADO"] || ''} | Seção: ${item["DIVISÃO/\nASSESS"] || ''} | Data: ${item["DATA INÍCIO"]} a ${item["DATA FIM"]}
+            </li>`;
+          });
+          html += "</ul>";
+        }
+      }
+      divRes.innerHTML = html;
+    }
+
+    function filtrarPorMissao(numero) {
+      const linhas = MISSOES.filter(el => el["N.º"] === numero);
+      if (linhas.length === 0) {
+        alert("Missão não encontrada.");
+        return;
+      }
+      const corpo = document.getElementById('tabela-linhas');
+      let html = '';
+      linhas.forEach((linha, idx) => {
+        const classe = linha.usada ? 'occupied' : 'available';
+        html += `<tr id="linha-${numero}-${idx}" class="${classe}">
+          <td onclick="confirmarUso('${numero}')" style="cursor:pointer;">${linha["N.º"] || ''}</td>
+          <td>${linha["POSTO/\nASSEGRAD"] || linha["POSTO/GRAD"] || 'N/A'}</td>
+          <td>${linha["NOME DO MILITAR OU CIVIL DESIGNADO"] || ''}</td>
+          <td>${linha["CPF"] || ''}</td>
+          <td>${linha["DATA INÍCIO"] || ''}</td>
+          <td>${linha["DATA FIM"] || ''}</td>
+          <td>${linha["DIVISÃO/\nASSESS"] || ''}</td>
+          <td>${linha["LOCAL\n(CIDADE/UF)"] || ''}</td>
+          <td>${linha["GASTO (DIÁRIAS)"] || ''}</td>
+          <td>${linha["SOMA"] || ''}</td>
+        </tr>`;
+      });
+      corpo.innerHTML = html;
+    }
+
+    function confirmarUso(numero) {
+      const linhas = MISSOES.filter(el => el["N.º"] === numero);
+      if (linhas.length === 0) {
+        alert("Missão não encontrada.");
+        return;
+      }
+      if (confirm(`Deseja marcar TODAS as entradas da Missão Nº ${numero} como utilizadas?`)) {
+        linhas.forEach(el => el.usada = true);
+        exibirTabelaCompleta();
+        consultar();
+        atualizarGraficoFinanceiro();
+        alert(`Missão Nº ${numero} foi marcada como utilizada.`);
+      }
+    }
+
+    function converterData(dataTexto) {
+      if (!dataTexto) return '';
+      const partes = dataTexto.split('/');
+      if (partes.length !== 3) return dataTexto;
+      const [dia, mes, ano] = partes;
+      return `${ano}-${mes.padStart(2,'0')}-${dia.padStart(2,'0')}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      MISSOES.forEach(item => {
+        if (item.usada === undefined) item.usada = false;
+      });
+      populateDropdowns();
+      exibirTabelaCompleta();
+      atualizarGraficoFinanceiro();
+    });
+
+    function consultar() {
+      const numeroBusca = document.getElementById('numeroBusca').value.trim();
+      const dataBusca   = document.getElementById('dataBusca').value;
+      const secaoBusca  = document.getElementById('secaoBusca').value.trim().toUpperCase();
+      const localBusca  = document.getElementById('localBusca').value.trim().toUpperCase();
+      const somaBusca   = document.getElementById('somaBusca').value.trim();
+      
+      let resultadosExatos = MISSOES.filter(item => filtrarExato(item, numeroBusca, dataBusca, secaoBusca, localBusca, somaBusca));
+      let resultadosAprox = [];
+      if (dataBusca) {
+        resultadosAprox = MISSOES.filter(item => filtrarAproximado(item, dataBusca, secaoBusca, localBusca, somaBusca));
+        resultadosAprox = resultadosAprox.filter(item => !resultadosExatos.includes(item));
+      }
+      exibirResultados(resultadosExatos, resultadosAprox);
+    }
+  </script>
+</body>
+</html>
